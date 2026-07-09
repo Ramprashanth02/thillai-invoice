@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ThillAi Decors & Event — Billing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --navy:#152238;
+    --navy-soft:#243352;
+    --amber:#c9922e;
+    --amber-soft:#f7ead0;
+    --bg:#eef0f3;
+    --paper:#ffffff;
+    --line:#e6e8ec;
+    --text:#181d27;
+    --text-soft:#6b7280;
+    --danger:#c1483f;
+    --ok-bg:#f4f6f5;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    font-family:'Inter',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    padding:16px 12px 60px;
+    font-size:15px;
+    line-height:1.4;
+  }
+  .app{max-width:840px;margin:0 auto;}
+
+  /* ---------- toolbar ---------- */
+  .toolbar{margin-bottom:16px;}
+  .toolbar h1{
+    font-family:'Manrope',sans-serif;
+    font-weight:800;
+    font-size:19px;
+    margin:0 0 2px;
+    color:var(--navy);
+    letter-spacing:-.2px;
+  }
+  .toolbar .sub{font-size:12.5px;color:var(--text-soft);}
+  .btns{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:8px;
+    margin-top:12px;
+  }
+  button{
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+    font-weight:600;
+    border:none;border-radius:9px;
+    padding:12px 14px;
+    cursor:pointer;
+    -webkit-appearance:none;
+    appearance:none;
+    min-height:44px;
+    transition:transform .1s ease, opacity .15s ease, box-shadow .15s ease;
+  }
+  button:active{transform:scale(.97);}
+  .btn-primary{background:var(--navy);color:#fff;}
+  .btn-primary:hover{box-shadow:0 6px 16px rgba(21,34,56,.25);}
+  .btn-gold{background:var(--amber);color:#2a1c04;}
+  .btn-gold:hover{box-shadow:0 6px 16px rgba(201,146,46,.35);}
+  .btn-ghost{background:#fff;color:var(--navy);border:1px solid var(--line);}
+  .btn-ghost:hover{background:#f7f8fa;}
+  .btn-text{
+    background:none;border:none;color:var(--navy-soft);font-size:13px;
+    font-weight:600;cursor:pointer;padding:8px 4px;min-height:auto;
+    display:inline-flex;align-items:center;gap:5px;
+  }
+  .btn-text:hover{color:var(--navy);}
+  .btn-remove{
+    background:#fdf1f0;border:none;color:var(--danger);font-size:14px;line-height:1;cursor:pointer;
+    padding:8px;border-radius:7px;min-width:34px;min-height:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+
+  @media (min-width:640px){
+    .toolbar{display:flex;justify-content:space-between;align-items:center;}
+    .btns{grid-template-columns:auto auto auto;margin-top:0;}
+    button{padding:11px 18px;min-height:auto;}
+  }
+
+  /* ---------- sheet ---------- */
+  #sheet{
+    background:var(--paper);
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 20px 45px rgba(21,34,56,.12), 0 2px 8px rgba(0,0,0,.05);
+  }
+
+  .band{
+    background:var(--navy);
+    color:#fff;
+    padding:22px 18px 20px;
+    position:relative;
+  }
+  .band-top{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-mark{
+    width:38px;height:38px;border-radius:9px;background:var(--amber);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .brand-mark span{font-family:'Manrope',sans-serif;font-weight:800;font-size:15px;color:#2a1c04;}
+  .brand-name{font-family:'Manrope',sans-serif;font-weight:800;font-size:17px;letter-spacing:.2px;}
+  .brand-tag{font-size:10.5px;color:#c3cbdb;letter-spacing:1.5px;text-transform:uppercase;margin-top:1px;}
+  .doc-tag{
+    text-align:right;flex-shrink:0;
+  }
+  .doc-tag .kind{
+    font-family:'Manrope',sans-serif;font-weight:800;font-size:13px;letter-spacing:2px;color:var(--amber);
+  }
+  .doc-tag .date-line{font-size:11.5px;color:#c3cbdb;margin-top:4px;display:flex;align-items:center;gap:4px;justify-content:flex-end;}
+  .doc-tag input{
+    border:none;border-bottom:1px dashed rgba(255,255,255,.35);background:transparent;color:#fff;
+    font-family:'Inter',sans-serif;font-size:11.5px;width:96px;text-align:right;padding:2px 0;
+  }
+
+  /* ---------- info ---------- */
+  .info-grid{
+    display:grid;grid-template-columns:1fr;gap:16px;
+    padding:18px 18px 16px;
+    border-bottom:1px solid var(--line);
+  }
+  .info-col .eyebrow{
+    font-family:'Manrope',sans-serif;font-size:10.5px;font-weight:800;letter-spacing:1.5px;color:var(--amber);
+    text-transform:uppercase;margin-bottom:8px;
+  }
+  .info-line{display:flex;gap:10px;margin-bottom:6px;align-items:baseline;}
+  .info-line .k{font-size:12px;color:var(--text-soft);width:52px;flex-shrink:0;}
+  .info-line input{
+    border:none;border-bottom:1px solid var(--line);background:transparent;
+    font-family:'Inter',sans-serif;font-weight:600;font-size:16px;color:var(--text);
+    padding:3px 2px;width:100%;min-width:0;
+  }
+  .info-line input:focus{border-bottom-color:var(--navy);outline:none;}
+
+  @media (min-width:560px){
+    .info-grid{grid-template-columns:1fr 1fr;}
+  }
+
+  /* ---------- items ---------- */
+  .section-label{
+    font-family:'Manrope',sans-serif;font-size:11px;font-weight:800;letter-spacing:1.5px;color:var(--text-soft);
+    text-transform:uppercase;padding:18px 18px 10px;
+  }
+  #itemsBody{padding:0 18px;}
+  .item{
+    border:1px solid var(--line);border-radius:10px;padding:13px 14px;margin-bottom:10px;
+    background:#fcfcfd;
+  }
+  .item-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+  .item-num{
+    font-family:'Manrope',sans-serif;font-weight:800;font-size:11px;color:#fff;background:var(--navy-soft);
+    border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;
+  }
+  .item-title{
+    flex:1;border:none;background:transparent;font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;color:var(--text);
+    padding:2px 0;min-width:0;
+  }
+  .item-amt{
+    font-family:'Manrope',sans-serif;font-weight:800;font-size:16px;color:var(--navy);white-space:nowrap;flex-shrink:0;
+  }
+  .item-meta{display:flex;gap:16px;margin:8px 0 2px 28px;flex-wrap:wrap;}
+  .meta-chip{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-soft);}
+  .meta-chip input{
+    border:none;border-bottom:1px dashed var(--line);background:transparent;font-family:'Inter',sans-serif;
+    font-size:16px;color:var(--text);width:48px;text-align:center;padding:2px;font-weight:600;
+  }
+  .meta-chip.rate input{width:72px;text-align:right;}
+  .sub-list{list-style:none;margin:8px 0 0 28px;padding:0;}
+  .sub-list li{display:flex;align-items:flex-start;gap:7px;margin-bottom:5px;}
+  .sub-list li:before{content:"";width:5px;height:5px;border-radius:50%;background:var(--amber);margin-top:7px;flex-shrink:0;}
+  .sub-list textarea{
+    flex:1;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:13px;color:#454b57;
+    resize:none;height:19px;line-height:1.35;padding:0;min-width:0;
+  }
+  .item-controls{display:flex;gap:14px;margin:10px 0 0 28px;flex-wrap:wrap;}
+
+  .add-row-bar{padding:6px 18px 4px;}
+  .add-row-bar button{width:100%;justify-content:center;}
+
+  @media (min-width:560px){
+    .item-meta{margin-left:32px;}
+    .sub-list{margin-left:32px;}
+    .item-controls{margin-left:32px;}
+    .add-row-bar button{width:auto;}
+  }
+
+  /* ---------- complementary ---------- */
+  .comp-box{margin:16px 18px 4px;border:1px dashed var(--line);border-radius:10px;padding:14px 16px;}
+  .comp-box .eyebrow2{
+    font-family:'Manrope',sans-serif;font-size:10.5px;font-weight:800;letter-spacing:1.5px;color:var(--text-soft);
+    text-transform:uppercase;margin-bottom:10px;
+  }
+  .comp-item{display:flex;align-items:flex-start;gap:8px;margin-bottom:7px;}
+  .comp-item:before{content:"✓";color:var(--amber);font-size:12px;font-weight:800;margin-top:2px;}
+  .comp-item textarea{
+    flex:1;border:none;border-bottom:1px dashed var(--line);background:transparent;
+    font-family:'Inter',sans-serif;font-size:13.5px;color:#454b57;resize:none;height:19px;padding:0 0 2px;min-width:0;
+  }
+
+  /* ---------- summary ---------- */
+  .summary{margin:18px 18px 0;padding-top:14px;border-top:1px solid var(--line);}
+  .sum-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:14px;}
+  .sum-row .lbl{color:var(--text-soft);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .sum-row .lbl input{
+    border:none;border-bottom:1px dashed var(--line);background:transparent;font-family:'Inter',sans-serif;
+    font-size:12.5px;color:var(--text-soft);width:56px;text-align:center;
+  }
+  .sum-row .val{font-family:'Manrope',sans-serif;font-weight:700;font-size:15px;color:var(--text);display:flex;align-items:center;gap:6px;}
+  .sum-row .val input{
+    border:none;background:transparent;font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;color:var(--text);
+    text-align:right;width:88px;border-bottom:1px dashed var(--line);
+  }
+  .sum-row.subtotal{border-bottom:1px solid var(--line);font-weight:700;}
+  .sum-row.subtotal .val{font-size:16.5px;color:var(--navy);}
+
+  .balance-box{
+    margin:14px 18px 0;background:var(--navy);border-radius:12px;padding:16px 18px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .balance-box .lbl{font-family:'Manrope',sans-serif;font-weight:700;font-size:13px;letter-spacing:.5px;color:#c3cbdb;text-transform:uppercase;}
+  .balance-box .val{font-family:'Manrope',sans-serif;font-weight:800;font-size:24px;color:var(--amber);}
+
+  .add-adv-row{padding:10px 18px 2px;text-align:right;}
+
+  /* ---------- footer ---------- */
+  .footer{padding:20px 18px 22px;text-align:center;}
+  .footer .thanks{font-family:'Manrope',sans-serif;font-weight:700;font-size:13.5px;color:var(--navy);}
+  .footer .contact{font-size:11.5px;color:var(--text-soft);margin-top:4px;}
+
+  /* export mode */
+  .no-export{}
+  .exporting .no-export{display:none !important;}
+  .exporting input, .exporting textarea{border-color:transparent !important;}
+  .exporting .item{background:#fcfcfd;}
+  .exporting #sheet{border-radius:0;box-shadow:none;}
+
+  @media (max-width:400px){
+    body{padding:12px 8px 50px;font-size:14px;}
+    .brand-name{font-size:15.5px;}
+    .balance-box .val{font-size:21px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="toolbar no-export">
+    <div>
+      <h1>Billing Studio</h1>
+      <div class="sub">Edit the invoice, then export it.</div>
+    </div>
+    <div class="btns">
+      <button class="btn-ghost" onclick="window.print()">Print</button>
+      <button class="btn-primary" onclick="downloadJPG()">JPG</button>
+      <button class="btn-gold" onclick="downloadPDF()">PDF</button>
+    </div>
+  </div>
+
+  <div id="sheet">
+    <div class="band">
+      <div class="band-top">
+        <div class="brand">
+          <div class="brand-mark"><span>TA</span></div>
+          <div>
+            <div class="brand-name">ThillAi Decors &amp; Event</div>
+            <div class="brand-tag">Decor Studio</div>
+          </div>
+        </div>
+        <div class="doc-tag">
+          <div class="kind">INVOICE</div>
+          <div class="date-line">Date <input type="text" id="invDate" value="09 Jul 2026"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-col">
+        <div class="eyebrow">Billed To</div>
+        <div class="info-line"><span class="k">Name</span><input type="text" id="contactName" value="Sivasankaran M"></div>
+        <div class="info-line"><span class="k">Phone</span><input type="text" id="phoneNo" value="86081 25143"></div>
+      </div>
+      <div class="info-col">
+        <div class="eyebrow">Event Details</div>
+        <div class="info-line"><span class="k">Venue</span><input type="text" id="venueName" value="Suganya Convention Center"></div>
+        <div class="info-line"><span class="k">Dates</span><input type="text" id="eventDate" value="11 &amp; 12 Jul 2026"></div>
+      </div>
+    </div>
+
+    <div class="section-label">Itemised Decor</div>
+    <div id="itemsBody"></div>
+
+    <div class="add-row-bar no-export">
+      <button class="btn-ghost" onclick="addItem()">+ Add Line Item</button>
+    </div>
+
+    <div class="comp-box">
+      <div class="eyebrow2">Complementary</div>
+      <div id="compList"></div>
+      <button class="btn-text no-export" onclick="addComp()">+ add complementary item</button>
+    </div>
+
+    <div class="summary">
+      <div class="sum-row subtotal">
+        <div class="lbl">Subtotal</div>
+        <div class="val" id="grandTotal">₹0</div>
+      </div>
+      <div id="advRows"></div>
+    </div>
+    <div class="add-adv-row no-export">
+      <button class="btn-text" onclick="addAdvance()">+ add advance payment</button>
+    </div>
+
+    <div class="balance-box">
+      <div class="lbl">Balance Due</div>
+      <div class="val" id="balanceVal">₹0</div>
+    </div>
+
+    <div class="footer">
+      <div class="thanks">Thank you for your business</div>
+      <div class="contact">ThillAi Decors &amp; Event · 86081 25143</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let itemCounter = 0;
+
+function fmt(n){
+  n = Math.round(n);
+  return '₹' + n.toLocaleString('en-IN');
+}
+function autoGrow(ta){
+  ta.style.height = 'auto';
+  ta.style.height = (ta.scrollHeight) + 'px';
+}
+
+function makeItem(data){
+  itemCounter++;
+  const id = 'item_' + itemCounter;
+  const wrap = document.createElement('div');
+  wrap.className = 'item';
+  wrap.dataset.id = id;
+  wrap.innerHTML = `
+    <div class="item-top">
+      <div class="item-num">${document.querySelectorAll('.item').length + 1}</div>
+      <input class="item-title" value="${data.title||''}">
+      <div class="item-amt" data-amt>₹0</div>
+    </div>
+    <div class="item-meta">
+      <span class="meta-chip">Qty <input type="text" class="qty-input" value="${data.qty!==undefined?data.qty:1}" oninput="recalc()" inputmode="decimal"></span>
+      <span class="meta-chip rate">Rate <input type="text" class="rate-input" value="${data.rate!==undefined?data.rate:''}" placeholder="0" oninput="recalc()" inputmode="decimal"></span>
+    </div>
+    <ul class="sub-list"></ul>
+    <div class="item-controls no-export">
+      <button class="btn-text" onclick="addSub(this)">+ sub-point</button>
+      <button class="btn-text" style="color:var(--danger);" onclick="removeItem('${id}')">remove item</button>
+    </div>
+  `;
+  document.getElementById('itemsBody').appendChild(wrap);
+  const subList = wrap.querySelector('.sub-list');
+  (data.subs||[]).forEach(s => addSub(null, subList, s));
+  recalc();
+}
+
+function addSub(btn, listEl, text){
+  const ul = listEl || btn.closest('.item').querySelector('.sub-list');
+  const li = document.createElement('li');
+  li.innerHTML = `<textarea rows="1" oninput="autoGrow(this)">${text||''}</textarea><button class="btn-remove no-export" onclick="this.parentElement.remove()">✕</button>`;
+  ul.appendChild(li);
+}
+
+function removeItem(id){
+  const el = document.querySelector(`.item[data-id="${id}"]`);
+  if(el) el.remove();
+  renumber();
+  recalc();
+}
+
+function renumber(){
+  document.querySelectorAll('.item').forEach((it,i)=>{
+    it.querySelector('.item-num').textContent = i+1;
+  });
+}
+
+function addItem(){
+  makeItem({title:'New Item', qty:1, rate:'', subs:[]});
+}
+
+function recalc(){
+  let total = 0;
+  document.querySelectorAll('.item').forEach(it=>{
+    const qty = parseFloat(it.querySelector('.qty-input').value) || 0;
+    const rate = parseFloat(it.querySelector('.rate-input').value) || 0;
+    const amt = qty*rate;
+    it.querySelector('[data-amt]').textContent = fmt(amt);
+    total += amt;
+  });
+  document.getElementById('grandTotal').textContent = fmt(total);
+
+  let advTotal = 0;
+  document.querySelectorAll('.adv-amt-input').forEach(inp=>{
+    advTotal += parseFloat(inp.value.replace(/,/g,'')) || 0;
+  });
+  const balance = total - advTotal;
+  document.getElementById('balanceVal').textContent = fmt(balance);
+}
+
+function addAdvance(dateVal, amtVal){
+  const wrap = document.getElementById('advRows');
+  const row = document.createElement('div');
+  row.className = 'sum-row adv-line';
+  row.innerHTML = `
+    <div class="lbl">Advance <input type="text" value="${dateVal||''}" placeholder="date"></div>
+    <div class="val">- <input type="text" class="adv-amt-input" value="${amtVal||''}" placeholder="0" oninput="recalc()" inputmode="decimal">
+      <button class="btn-remove no-export" onclick="this.closest('.adv-line').remove(); recalc();">✕</button>
+    </div>
+  `;
+  wrap.appendChild(row);
+  recalc();
+}
+
+function addComp(text){
+  const list = document.getElementById('compList');
+  const row = document.createElement('div');
+  row.className = 'comp-item';
+  row.innerHTML = `<textarea rows="1" oninput="autoGrow(this)">${text||''}</textarea><button class="btn-remove no-export" onclick="this.parentElement.remove()">✕</button>`;
+  list.appendChild(row);
+}
+
+// ---- seed ----
+function seed(){
+  makeItem({title:'Evening Decoration', qty:1, rate:28000, subs:[
+    'Entrance with name board','Glass door entry decor','Glass to door work','Wooden door entrance','Pathway pillar bouquet'
+  ]});
+  makeItem({title:'Reception Stage Decor', qty:1, rate:240000, subs:[]});
+  makeItem({title:'Morning Decor', qty:1, rate:50000, subs:[]});
+  makeItem({title:'Lighting', qty:1, rate:22000, subs:[
+    'Entrance stand focus','Car entry box type 15ft entrance lighting','Full garden lighting','Compound wall light','Glass door front stand focus light','Stage front stand focus light','Generator with diesel (evening & morning)'
+  ]});
+  makeItem({title:'Garlands', qty:1, rate:21550, subs:[]});
+  makeItem({title:'Vazha Maram', qty:4, rate:2500, subs:[]});
+  makeItem({title:'Chair Cover', qty:650, rate:25, subs:[]});
+
+  addComp('Selfie decor');
+  addComp('Bride entry canopy');
+  addComp('Car decor');
+
+  addAdvance('22 Jun', '50000');
+  addAdvance('08 Jul', '150000');
+
+  recalc();
+}
+seed();
+
+// ---------- EXPORT ----------
+async function withExportMode(fn){
+  const sheet = document.getElementById('sheet');
+  document.body.classList.add('exporting');
+  sheet.querySelectorAll('textarea').forEach(autoGrow);
+  await new Promise(r=>setTimeout(r, 60));
+  try{ await fn(sheet); } finally { document.body.classList.remove('exporting'); }
+}
+
+async function downloadJPG(){
+  await withExportMode(async (sheet)=>{
+    const canvas = await html2canvas(sheet, {scale:2, backgroundColor:'#ffffff', useCORS:true});
+    const link = document.createElement('a');
+    link.download = 'thillai-invoice.jpg';
+    link.href = canvas.toDataURL('image/jpeg', 0.95);
+    link.click();
+  });
+}
+
+async function downloadPDF(){
+  await withExportMode(async (sheet)=>{
+    const canvas = await html2canvas(sheet, {scale:2, backgroundColor:'#ffffff', useCORS:true});
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    const { jsPDF } = window.jspdf;
+    const pdfWidth = 210;
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    const pdf = new jsPDF('p','mm','a4');
+    const pageHeight = 297;
+    if(pdfHeight <= pageHeight){
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+    } else {
+      let renderedHeight = 0;
+      while(renderedHeight < pdfHeight){
+        pdf.addImage(imgData, 'JPEG', 0, -renderedHeight, pdfWidth, pdfHeight);
+        renderedHeight += pageHeight;
+        if(renderedHeight < pdfHeight) pdf.addPage();
+      }
+    }
+    pdf.save('thillai-invoice.pdf');
+  });
+}
+</script>
+</body>
+</html>
