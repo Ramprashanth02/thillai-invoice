@@ -302,6 +302,7 @@
   .exporting .items-table thead th{background:var(--navy);}
   .exporting #sheet{border-radius:0;box-shadow:none;}
   .exporting .table-wrap{overflow:visible !important;}
+  body.exporting{width:900px !important;overflow-x:visible !important;}
   .exporting .sub-list li.zero-rate .sub-qty-input,
   .exporting .sub-list li.zero-rate .sub-rate-input,
   .exporting .sub-list li.zero-rate .sub-amt{display:none !important;}
@@ -314,17 +315,60 @@
     .brand-name{font-size:15.5px;}
     .balance-box .val{font-size:21px;}
   }
+
+  /* ---------- dashboard ---------- */
+  #dashboardScreen .btns.btns-1col{grid-template-columns:1fr;}
+  .btns-2col{grid-template-columns:1fr 1fr !important;}
+  .inv-card{
+    border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px;background:#fcfcfd;
+    display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;
+  }
+  .inv-card-main{flex:1;min-width:200px;cursor:pointer;}
+  .inv-card-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;}
+  .inv-name{font-family:'Manrope',sans-serif;font-weight:700;font-size:15.5px;color:var(--text);}
+  .inv-total{font-family:'Manrope',sans-serif;font-weight:800;font-size:15px;color:var(--navy);white-space:nowrap;}
+  .inv-card-meta{font-size:12.5px;color:var(--text-soft);margin-top:4px;}
+  .inv-card-balance{font-size:12.5px;color:var(--amber);font-weight:700;margin-top:4px;}
+  .inv-card-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;padding-top:2px;}
+  .empty-state{
+    text-align:center;padding:50px 20px;color:var(--text-soft);border:1px dashed var(--line);border-radius:12px;
+  }
+  .empty-state .big{font-family:'Manrope',sans-serif;font-weight:700;font-size:16px;color:var(--text);margin-bottom:6px;}
+  .storage-note{font-size:11px;color:var(--text-soft);text-align:center;margin-top:14px;}
 </style>
 </head>
 <body>
 
-<div class="app">
+<div class="app" id="dashboardScreen">
+  <div class="toolbar no-export">
+    <div>
+      <h1>Thillai Billing</h1>
+      <div class="sub">Your saved invoices</div>
+    </div>
+    <div class="btns btns-1col">
+      <button class="btn-primary" onclick="openNewInvoice()">+ New Invoice</button>
+    </div>
+  </div>
+
+  <div id="invoiceList"></div>
+  <div id="emptyState" class="empty-state" style="display:none;">
+    <div class="big">No invoices yet</div>
+    <div>Tap "New Invoice" to create your first bill.</div>
+  </div>
+  <div class="storage-note" id="storageNote"></div>
+</div>
+
+<div class="app" id="editorScreen" style="display:none;">
   <div class="toolbar no-export">
     <div>
       <h1>Billing Studio</h1>
       <div class="sub">Edit the invoice, then export it.</div>
     </div>
-    <div class="btns">
+    <div class="btns btns-2col">
+      <button class="btn-ghost" onclick="showDashboard()">&larr; Dashboard</button>
+      <button class="btn-primary" onclick="saveCurrentInvoice()">Save Invoice</button>
+    </div>
+    <div class="btns" style="margin-top:8px;">
       <button class="btn-ghost" onclick="window.print()">Print</button>
       <button class="btn-primary" onclick="downloadJPG()">JPG</button>
       <button class="btn-gold" onclick="downloadPDF()">PDF</button>
@@ -579,31 +623,273 @@ function addComp(text){
   list.appendChild(row);
 }
 
-// ---- seed ----
-function seed(){
-  makeItem({title:'Evening Decoration', qty:1, rate:28000, subs:[
-    'Entrance with name board','Glass door entry decor','Glass to door work','Wooden door entrance','Pathway pillar bouquet'
-  ]});
-  makeItem({title:'Reception Stage Decor', qty:1, rate:240000, subs:[]});
-  makeItem({title:'Morning Decor', qty:1, rate:50000, subs:[]});
-  makeItem({title:'Lighting', qty:1, rate:22000, subs:[
-    'Entrance stand focus','Car entry box type 15ft entrance lighting','Full garden lighting','Compound wall light','Glass door front stand focus light','Stage front stand focus light','Generator with diesel (evening & morning)'
-  ]});
-  makeItem({title:'Garlands', qty:1, rate:21550, subs:[]});
-  makeItem({title:'Vazha Maram', qty:4, rate:2500, subs:[]});
-  makeItem({title:'Chair Cover', qty:650, rate:25, subs:[]});
+// ---- sample data used only to seed the very first visit ----
+function sampleInvoiceData(){
+  return {
+    invDate: '2026-07-09',
+    contactName: 'Sivasankaran M',
+    phoneNo: '86081 25143',
+    venueName: 'Suganya Convention Center',
+    eventDate: '11 & 12 Jul 2026',
+    items: [
+      {title:'Evening Decoration', qty:1, rate:28000, subs:[
+        {text:'Entrance with name board'},{text:'Glass door entry decor'},{text:'Glass to door work'},{text:'Wooden door entrance'},{text:'Pathway pillar bouquet'}
+      ]},
+      {title:'Reception Stage Decor', qty:1, rate:240000, subs:[]},
+      {title:'Morning Decor', qty:1, rate:50000, subs:[]},
+      {title:'Lighting', qty:1, rate:22000, subs:[
+        {text:'Entrance stand focus'},{text:'Car entry box type 15ft entrance lighting'},{text:'Full garden lighting'},{text:'Compound wall light'},{text:'Glass door front stand focus light'},{text:'Stage front stand focus light'},{text:'Generator with diesel (evening & morning)'}
+      ]},
+      {title:'Garlands', qty:1, rate:21550, subs:[]},
+      {title:'Vazha Maram', qty:4, rate:2500, subs:[]},
+      {title:'Chair Cover', qty:650, rate:25, subs:[]}
+    ],
+    comp: ['Selfie decor','Bride entry canopy','Car decor'],
+    advances: [{date:'2026-06-22', amount:'50000'}, {date:'2026-07-08', amount:'150000'}]
+  };
+}
 
-  addComp('Selfie decor');
-  addComp('Bride entry canopy');
-  addComp('Car decor');
+function blankInvoiceData(){
+  const today = new Date().toISOString().slice(0,10);
+  return {
+    invDate: today, contactName:'', phoneNo:'', venueName:'', eventDate:'',
+    items: [{title:'', qty:1, rate:'', subs:[]}], comp: [], advances: []
+  };
+}
 
-  addAdvance('2026-06-22', '50000');
-  addAdvance('2026-07-08', '150000');
+// ---------- STORAGE (works inside claude.ai artifacts via window.storage,
+// falls back to localStorage when opened as a standalone file) ----------
+const hasClaudeStorage = (typeof window.storage !== 'undefined');
+const INVOICES_KEY = 'thillai_invoices';
 
+async function loadInvoicesList(){
+  try{
+    if(hasClaudeStorage){
+      const res = await window.storage.get(INVOICES_KEY, false);
+      return (res && res.value) ? JSON.parse(res.value) : [];
+    } else {
+      const raw = localStorage.getItem(INVOICES_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }
+  }catch(e){
+    return [];
+  }
+}
+
+async function persistInvoicesList(list){
+  try{
+    if(hasClaudeStorage){
+      await window.storage.set(INVOICES_KEY, JSON.stringify(list), false);
+    } else {
+      localStorage.setItem(INVOICES_KEY, JSON.stringify(list));
+    }
+    return true;
+  }catch(e){
+    console.error('Could not save invoices', e);
+    return false;
+  }
+}
+
+// ---------- SERIALIZE / LOAD EDITOR STATE ----------
+function serializeInvoice(){
+  const items = [];
+  document.querySelectorAll('#itemsBody tr.item').forEach(tr=>{
+    const title = tr.querySelector('.item-title').value;
+    const qty = tr.querySelector('.qty-input').value;
+    const rate = tr.querySelector('.rate-input').value;
+    const subTr = tr.nextElementSibling;
+    const subs = [];
+    if(subTr && subTr.classList.contains('sub-row')){
+      subTr.querySelectorAll('.sub-list li').forEach(li=>{
+        const ta = li.querySelector('textarea');
+        const sq = li.querySelector('.sub-qty-input');
+        const sr = li.querySelector('.sub-rate-input');
+        subs.push({ text: ta ? ta.value : '', qty: sq ? sq.value : 1, rate: sr ? sr.value : '' });
+      });
+    }
+    items.push({title, qty, rate, subs});
+  });
+  const comp = [];
+  document.querySelectorAll('#compList .comp-item textarea').forEach(ta=>comp.push(ta.value));
+  const advances = [];
+  document.querySelectorAll('#advRows .adv-line').forEach(row=>{
+    const dateInput = row.querySelector('input[type="date"]');
+    const amtInput = row.querySelector('.adv-amt-input');
+    advances.push({ date: dateInput ? dateInput.value : '', amount: amtInput ? amtInput.value : '' });
+  });
+  return {
+    invDate: document.getElementById('invDate').value,
+    contactName: document.getElementById('contactName').value,
+    phoneNo: document.getElementById('phoneNo').value,
+    venueName: document.getElementById('venueName').value,
+    eventDate: document.getElementById('eventDate').value,
+    items, comp, advances
+  };
+}
+
+function clearEditor(){
+  document.getElementById('itemsBody').innerHTML = '';
+  document.getElementById('compList').innerHTML = '';
+  document.getElementById('advRows').innerHTML = '';
+  itemCounter = 0;
+}
+
+function loadInvoiceIntoEditor(data){
+  clearEditor();
+  document.getElementById('invDate').value = data.invDate || new Date().toISOString().slice(0,10);
+  document.getElementById('contactName').value = data.contactName || '';
+  document.getElementById('phoneNo').value = data.phoneNo || '';
+  document.getElementById('venueName').value = data.venueName || '';
+  document.getElementById('eventDate').value = data.eventDate || '';
+  (data.items||[]).forEach(it => makeItem({title:it.title, qty:it.qty, rate:it.rate, subs:it.subs}));
+  (data.comp||[]).forEach(c => addComp(c));
+  (data.advances||[]).forEach(a => addAdvance(a.date, a.amount));
   recalc();
   paintAllDates();
 }
-seed();
+
+// ---------- DASHBOARD <-> EDITOR NAVIGATION ----------
+let currentInvoiceId = null;
+
+function showDashboard(){
+  document.getElementById('editorScreen').style.display = 'none';
+  document.getElementById('dashboardScreen').style.display = '';
+  renderDashboard();
+}
+
+function showEditor(){
+  document.getElementById('dashboardScreen').style.display = 'none';
+  document.getElementById('editorScreen').style.display = '';
+}
+
+function escapeHtml(s){
+  return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function computeSummaryFromData(data){
+  let total = 0;
+  (data.items||[]).forEach(it=>{
+    const q = parseFloat(it.qty) || 0;
+    const r = parseFloat((it.rate||'').toString().replace(/,/g,'')) || 0;
+    let subTotal = 0;
+    (it.subs||[]).forEach(s=>{
+      subTotal += (parseFloat(s.qty)||0) * (parseFloat((s.rate||'').toString().replace(/,/g,''))||0);
+    });
+    total += q*r + subTotal;
+  });
+  let adv = 0;
+  (data.advances||[]).forEach(a=>{
+    adv += parseFloat((a.amount||'').toString().replace(/,/g,'')) || 0;
+  });
+  return { total, balance: total - adv };
+}
+
+async function renderDashboard(){
+  const list = await loadInvoicesList();
+  const wrap = document.getElementById('invoiceList');
+  const empty = document.getElementById('emptyState');
+  list.sort((a,b)=> (b.updatedAt||0) - (a.updatedAt||0));
+  if(list.length === 0){
+    wrap.innerHTML = '';
+    empty.style.display = '';
+    document.getElementById('storageNote').textContent = '';
+    return;
+  }
+  empty.style.display = 'none';
+  wrap.innerHTML = list.map(inv=>{
+    const s = computeSummaryFromData(inv.data);
+    const dateDisp = formatDMY(inv.data.invDate) || inv.data.invDate || '';
+    const clientName = escapeHtml(inv.data.contactName) || 'Untitled client';
+    const venue = escapeHtml(inv.data.venueName) || 'No venue set';
+    return `
+      <div class="inv-card">
+        <div class="inv-card-main" onclick="openEditInvoice('${inv.id}')">
+          <div class="inv-card-top">
+            <div class="inv-name">${clientName}</div>
+            <div class="inv-total">${fmt(s.total)}</div>
+          </div>
+          <div class="inv-card-meta">${venue} &middot; ${dateDisp}</div>
+          <div class="inv-card-balance">Balance due: ${fmt(s.balance)}</div>
+        </div>
+        <div class="inv-card-actions no-export">
+          <button class="btn-text" onclick="openEditInvoice('${inv.id}')">Edit</button>
+          <button class="btn-text" onclick="duplicateInvoice('${inv.id}')">Duplicate</button>
+          <button class="btn-text" style="color:var(--danger);" onclick="deleteInvoice('${inv.id}')">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  document.getElementById('storageNote').textContent = hasClaudeStorage
+    ? ''
+    : 'Saved to this browser only.';
+}
+
+function openNewInvoice(){
+  currentInvoiceId = null;
+  loadInvoiceIntoEditor(blankInvoiceData());
+  showEditor();
+}
+
+async function openEditInvoice(id){
+  const list = await loadInvoicesList();
+  const inv = list.find(x=>x.id===id);
+  if(!inv) return;
+  currentInvoiceId = id;
+  loadInvoiceIntoEditor(inv.data);
+  showEditor();
+}
+
+async function duplicateInvoice(id){
+  const list = await loadInvoicesList();
+  const inv = list.find(x=>x.id===id);
+  if(!inv) return;
+  const copy = { id: 'inv_'+Date.now(), updatedAt: Date.now(), data: JSON.parse(JSON.stringify(inv.data)) };
+  list.push(copy);
+  await persistInvoicesList(list);
+  renderDashboard();
+}
+
+async function deleteInvoice(id){
+  let proceed = true;
+  try{ proceed = confirm('Delete this invoice? This cannot be undone.'); }catch(e){}
+  if(!proceed) return;
+  let list = await loadInvoicesList();
+  list = list.filter(x=>x.id!==id);
+  await persistInvoicesList(list);
+  renderDashboard();
+}
+
+async function saveCurrentInvoice(){
+  const data = serializeInvoice();
+  let list = await loadInvoicesList();
+  if(currentInvoiceId){
+    const idx = list.findIndex(x=>x.id===currentInvoiceId);
+    if(idx>=0){ list[idx].data = data; list[idx].updatedAt = Date.now(); }
+    else { list.push({ id: currentInvoiceId, updatedAt: Date.now(), data }); }
+  } else {
+    currentInvoiceId = 'inv_'+Date.now();
+    list.push({ id: currentInvoiceId, updatedAt: Date.now(), data });
+  }
+  const ok = await persistInvoicesList(list);
+  if(!ok){
+    alert('Sorry, the invoice could not be saved.');
+    return;
+  }
+  showDashboard();
+}
+
+// ---------- INIT ----------
+async function initApp(){
+  let list = await loadInvoicesList();
+  if(list.length === 0){
+    list = [{ id: 'sample_'+Date.now(), updatedAt: Date.now(), data: sampleInvoiceData() }];
+    await persistInvoicesList(list);
+  }
+  document.getElementById('editorScreen').style.display = 'none';
+  document.getElementById('dashboardScreen').style.display = '';
+  renderDashboard();
+}
+initApp();
 
 // ---------- EXPORT ----------
 async function withExportMode(fn){
@@ -627,7 +913,7 @@ async function withExportMode(fn){
 
 async function downloadJPG(){
   await withExportMode(async (sheet)=>{
-    const canvas = await html2canvas(sheet, {scale:2, backgroundColor:'#ffffff', useCORS:true, windowWidth:900, x:0, y:0, scrollX:0, scrollY:0});
+    const canvas = await html2canvas(sheet, {scale:2, backgroundColor:'#ffffff', useCORS:true});
     const link = document.createElement('a');
     link.download = 'thillai-invoice.jpg';
     link.href = canvas.toDataURL('image/jpeg', 0.95);
@@ -637,7 +923,7 @@ async function downloadJPG(){
 
 async function downloadPDF(){
   await withExportMode(async (sheet)=>{
-    const canvas = await html2canvas(sheet, {scale:2, backgroundColor:'#ffffff', useCORS:true, windowWidth:900, x:0, y:0, scrollX:0, scrollY:0});
+    const canvas = await html2canvas(sheet, {scale:2, backgroundColor:'#ffffff', useCORS:true});
     const { jsPDF } = window.jspdf;
     const pdfWidth = 210;
     const pageHeightMm = 297;
